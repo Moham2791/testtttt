@@ -1,0 +1,75 @@
+package com.charter.provisioning.network.rna.bps.sync.util;
+
+public final class BpsAddAccountNameSanitizer {
+
+        // Disallowed special characters
+        private static final String FORBIDDEN_CHAR_PATTERN = "[~!@#$%^*()\\-_=+{}\\[\\]|\\\\/:;<>.,?'\"&]";
+        private static final int MAX_LENGTH = 30;
+        private void NameSanitizer() {
+            // Utility class — prevent instantiation
+        }
+
+       /* *//**//**//**//**
+         * Sanitizes a name string by:
+         * - Removing forbidden characters
+         * - Trimming whitespace
+         * - Truncating to a max length
+         *
+          @param name the original name input
+          @return a cleaned, safe name string (never null)
+         */
+        public static String sanitize(String name) {
+            if (name == null || name.trim().isEmpty()) {
+                return " ";
+            }
+
+            // Remove disallowed characters and trim
+            String cleaned = name.replaceAll(FORBIDDEN_CHAR_PATTERN, "").trim();
+
+            // Limit to max allowed length
+            return cleaned.length() > MAX_LENGTH ? cleaned.substring(0, MAX_LENGTH) : cleaned;
+        }
+    }
++===========================================================================================================
+package com.charter.provisioning.network.rna.bps.sync.util;
+
+import com.charter.provisioning.network.rna.bps.sync.model.AccountMessage;
+
+public class BpsAddAccountNameValidations {
+// In case of empty
+    // if account Type is  Res serviceCustomer firstName is the first name
+    //if accountType is Com then firstName is '-'
+    //if account Type is empty string firstName is "-"
+
+    // if account Type is  Res serviceCustomer lastName is the serviceCustomerLastName
+    //if accountType is Com then lastName is 'serviceCompanyName'
+    //if account Type is empty string lastName is "-"
+
+    public void accountTypeConditionalCheck(AccountMessage accountMessage,) {
+
+
+        if (accountMessage.getServiceCustomerFirstName().equals("") && accountMessage.getAccountType().equals("res")) {
+            accountMessage.setServiceCustomerFirstName("-");
+
+        }
+        if (accountMessage.getServiceCustomerLastName().equals("") && accountMessage.getAccountType().equals("res")) {
+            accountMessage.setServiceCustomerLastName("-");
+        }
+        if (accountMessage.getBillingCustomerFirstName().equals("")&& accountMessage.getAccountType().equals("com")){
+            accountMessage.setServiceCustomerFirstName("-");
+
+        }
+
+        if (accountMessage.getBillingCustomerLastName().equals("")&& accountMessage.getAccountType().equals("com")) {
+            if (!accountMessage.getServiceCompanyName().equals("")) {
+                accountMessage.setServiceCustomerLastName("-");
+            } else {
+                accountMessage.setServiceCustomerLastName(accountMessage.getServiceCompanyName());
+            }
+
+        }
+
+    }
+
+
+}
