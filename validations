@@ -12,3 +12,9 @@
         abstractObject.getObject().add(populateAddressObject(address));
         webApiRequest.getArguments().getObject().add(abstractObject);
     }
+private Property createProperty(String name, String value) {
+        Property property = new Property();
+        property.setName(name);
+        property.setValue(value);
+        return property;
+    }
