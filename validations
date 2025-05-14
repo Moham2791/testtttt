@@ -1,75 +1,111 @@
-package com.charter.provisioning.network.rna.bps.sync.util;
+package com.yourcompany.validator;
 
-public final class BpsAddAccountNameSanitizer {
+import java.util.Objects;
 
-        // Disallowed special characters
-        private static final String FORBIDDEN_CHAR_PATTERN = "[~!@#$%^*()\\-_=+{}\\[\\]|\\\\/:;<>.,?'\"&]";
-        private static final int MAX_LENGTH = 30;
-        private void NameSanitizer() {
-            // Utility class — prevent instantiation
+/**
+ * Utility class for sanitizing and validating account name fields
+ * based on account type.
+ */
+public final class BpsAccountNameValidator {
+
+    private static final String FORBIDDEN_CHAR_PATTERN = "[~!@#$%^*()\\-_=+{}\\[\\]|\\\\/:;<>.,?'\"&]";
+    private static final int MAX_LENGTH = 30;
+    private static final String DEFAULT_NAME = "-";
+    private static final String EMPTY_PLACEHOLDER = " ";
+
+    // Private constructor to prevent instantiation
+    private BpsAccountNameValidator() {}
+
+    /**
+     * Sanitizes and validates the name-related fields of the given AccountMessage.
+     * This is the only method you need to call after consuming a message.
+     *
+     * @param accountMessage the AccountMessage object to be sanitized and validated
+     */
+    public static void sanitizeAndValidate(AccountMessage accountMessage) {
+        if (accountMessage == null) {
+            return;
         }
 
-       /* *//**//**//**//**
-         * Sanitizes a name string by:
-         * - Removing forbidden characters
-         * - Trimming whitespace
-         * - Truncating to a max length
-         *
-          @param name the original name input
-          @return a cleaned, safe name string (never null)
-         */
-        public static String sanitize(String name) {
-            if (name == null || name.trim().isEmpty()) {
-                return " ";
-            }
+        String accountType = normalize(accountMessage.getAccountType());
 
-            // Remove disallowed characters and trim
-            String cleaned = name.replaceAll(FORBIDDEN_CHAR_PATTERN, "").trim();
+        handleFirstName(accountMessage, accountType);
+        handleLastName(accountMessage, accountType);
 
-            // Limit to max allowed length
-            return cleaned.length() > MAX_LENGTH ? cleaned.substring(0, MAX_LENGTH) : cleaned;
-        }
-    }
-+===========================================================================================================
-package com.charter.provisioning.network.rna.bps.sync.util;
-
-import com.charter.provisioning.network.rna.bps.sync.model.AccountMessage;
-
-public class BpsAddAccountNameValidations {
-// In case of empty
-    // if account Type is  Res serviceCustomer firstName is the first name
-    //if accountType is Com then firstName is '-'
-    //if account Type is empty string firstName is "-"
-
-    // if account Type is  Res serviceCustomer lastName is the serviceCustomerLastName
-    //if accountType is Com then lastName is 'serviceCompanyName'
-    //if account Type is empty string lastName is "-"
-
-    public void accountTypeConditionalCheck(AccountMessage accountMessage,) {
-
-
-        if (accountMessage.getServiceCustomerFirstName().equals("") && accountMessage.getAccountType().equals("res")) {
-            accountMessage.setServiceCustomerFirstName("-");
-
-        }
-        if (accountMessage.getServiceCustomerLastName().equals("") && accountMessage.getAccountType().equals("res")) {
-            accountMessage.setServiceCustomerLastName("-");
-        }
-        if (accountMessage.getBillingCustomerFirstName().equals("")&& accountMessage.getAccountType().equals("com")){
-            accountMessage.setServiceCustomerFirstName("-");
-
-        }
-
-        if (accountMessage.getBillingCustomerLastName().equals("")&& accountMessage.getAccountType().equals("com")) {
-            if (!accountMessage.getServiceCompanyName().equals("")) {
-                accountMessage.setServiceCustomerLastName("-");
-            } else {
-                accountMessage.setServiceCustomerLastName(accountMessage.getServiceCompanyName());
-            }
-
-        }
-
+        // Sanitize all name fields after applying validation defaults
+        accountMessage.setServiceCustomerFirstName(sanitize(accountMessage.getServiceCustomerFirstName()));
+        accountMessage.setServiceCustomerLastName(sanitize(accountMessage.getServiceCustomerLastName()));
+        accountMessage.setBillingCustomerFirstName(sanitize(accountMessage.getBillingCustomerFirstName()));
+        accountMessage.setBillingCustomerLastName(sanitize(accountMessage.getBillingCustomerLastName()));
     }
 
+    // Helper to apply first name rules based on account type
+    private static void handleFirstName(AccountMessage accountMessage, String accountType) {
+        boolean isFirstNameEmpty = isEmpty(accountMessage.getServiceCustomerFirstName());
 
+        switch (accountType) {
+            case "res":
+            case "":
+                if (isFirstNameEmpty) {
+                    accountMessage.setServiceCustomerFirstName(DEFAULT_NAME);
+                }
+                break;
+            case "com":
+                if (isEmpty(accountMessage.getBillingCustomerFirstName())) {
+                    accountMessage.setServiceCustomerFirstName(DEFAULT_NAME);
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
+    // Helper to apply last name rules based on account type
+    private static void handleLastName(AccountMessage accountMessage, String accountType) {
+        boolean isLastNameEmpty = isEmpty(accountMessage.getServiceCustomerLastName());
+
+        switch (accountType) {
+            case "res":
+            case "":
+                if (isLastNameEmpty) {
+                    accountMessage.setServiceCustomerLastName(DEFAULT_NAME);
+                }
+                break;
+            case "com":
+                if (isEmpty(accountMessage.getBillingCustomerLastName())) {
+                    if (isEmpty(accountMessage.getServiceCompanyName())) {
+                        accountMessage.setServiceCustomerLastName(DEFAULT_NAME);
+                    } else {
+                        accountMessage.setServiceCustomerLastName(accountMessage.getServiceCompanyName());
+                    }
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
+    /**
+     * Sanitizes a string by removing disallowed characters,
+     * trimming, and truncating to a max length.
+     *
+     * @param input the raw name string
+     * @return the sanitized string (never null)
+     */
+    private static String sanitize(String input) {
+        if (isEmpty(input)) {
+            return EMPTY_PLACEHOLDER;
+        }
+
+        String cleaned = input.replaceAll(FORBIDDEN_CHAR_PATTERN, "").trim();
+        return cleaned.length() > MAX_LENGTH ? cleaned.substring(0, MAX_LENGTH) : cleaned;
+    }
+
+    private static boolean isEmpty(String value) {
+        return value == null || value.trim().isEmpty();
+    }
+
+    private static String normalize(String value) {
+        return value == null ? "" : value.trim().toLowerCase();
+    }
 }
